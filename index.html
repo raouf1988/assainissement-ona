@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>تسيير شبكات الصرف الصحي</title>
+<style>
+:root{--navy:#12304a;--teal:#087e8b;--bg:#f3f6f8;--line:#d9e2e8;--ink:#1d2b36;--muted:#60717e;--white:#fff;--orange:#d97706}
+*{box-sizing:border-box}body{margin:0;font-family:Tahoma,Arial,sans-serif;background:var(--bg);color:var(--ink)}
+header{background:linear-gradient(120deg,var(--navy),#165b70);color:white;padding:22px 4%;box-shadow:0 3px 12px #0b263822}
+header h1{margin:0 0 8px;font-size:clamp(22px,3vw,32px)}header p{margin:0;color:#dcebf1}
+.wrap{max-width:1400px;margin:auto;padding:20px}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:18px}
+.stat,.panel{background:white;border:1px solid var(--line);border-radius:12px;padding:16px;box-shadow:0 2px 8px #102a3a08}
+.stat span{color:var(--muted);font-size:13px}.stat strong{display:block;font-size:27px;color:var(--teal);margin-top:8px}
+nav{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+nav button,.btn{border:0;border-radius:8px;padding:11px 15px;background:#e1ebf0;color:var(--navy);font-weight:bold;cursor:pointer}
+nav button.active,.btn.primary{background:var(--teal);color:white}.btn.dark{background:var(--navy);color:white}.btn.warn{background:#fff1db;color:#854d0e}
+.section{display:none}.section.active{display:block}.panel{margin-bottom:16px}.panel h2{margin:0 0 14px;font-size:19px}
+.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+label{display:block;font-size:13px;color:#425462;margin-bottom:5px}
+input,select,textarea{width:100%;border:1px solid #cbd7df;border-radius:7px;padding:10px;font:inherit;background:#fff;color:var(--ink)}
+textarea{min-height:76px;resize:vertical}.wide{grid-column:span 2}.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.tablewrap{overflow:auto}table{border-collapse:collapse;width:100%;min-width:900px;font-size:13px}th,td{padding:10px;border-bottom:1px solid var(--line);text-align:right;vertical-align:top}th{background:#eef4f7;color:var(--navy);white-space:nowrap}tbody tr:hover{background:#f8fbfc}.tag{display:inline-block;padding:4px 8px;border-radius:20px;font-size:12px;background:#e5f5f3;color:#086a60}.tag.emergency{background:#fee9e7;color:#a12c22}.muted{color:var(--muted);font-size:13px}.toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:end;margin-bottom:12px}.toolbar>div{min-width:150px;flex:1}.empty{text-align:center;color:var(--muted);padding:28px}.danger{color:#a12c22}.smallbtn{padding:5px 8px;font-size:12px}.notice{background:#fff8e8;border:1px solid #f3d99a;padding:12px;border-radius:8px;font-size:13px;margin-bottom:14px}
+footer{text-align:center;color:var(--muted);padding:20px;font-size:12px}
+.auth-overlay{position:fixed;inset:0;background:#0c2338eF;z-index:9999;display:flex;align-items:center;justify-content:center;padding:18px}.auth-card{background:#fff;border-radius:16px;padding:24px;width:min(100%,460px);box-shadow:0 20px 70px #0004}.auth-card h2{margin-top:0;color:var(--navy)}.auth-card .grid{grid-template-columns:1fr}.userbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.userbar .tag{background:#dcecf4;color:#12304a}.daily-report-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.daily-report-grid .stat{box-shadow:none}.permission-note{border:1px solid #e2d6a8;background:#fff9e8;border-radius:8px;padding:10px;font-size:13px;margin:10px 0}@media(max-width:850px){.daily-report-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:850px){.stats{grid-template-columns:repeat(2,1fr)}.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.wrap{padding:12px}.wide{grid-column:span 2}}
+@media(max-width:480px){.grid{grid-template-columns:1fr}.wide{grid-column:span 1}.stats{gap:8px}.stat{padding:12px}.stat strong{font-size:22px}}
+[dir=ltr] th,[dir=ltr] td{text-align:left}[dir=ltr] .auth-card,[dir=ltr] .wrap{direction:ltr}</style></head>
+<body>
+<header><div style="display:flex;justify-content:space-between;gap:14px;align-items:center;flex-wrap:wrap"><div><h1>منصة تسيير ومتابعة شبكات الصرف الصحي</h1><p>النشاط اليومي للمراكز والوحدات • النقاط السوداء • المشاريع</p></div><div style="min-width:150px"><label for="languageSelect" style="color:white">اللغة / Langue / Language</label><select id="languageSelect"><option value="ar">العربية</option><option value="fr">Français</option><option value="en">English</option></select></div></div></header>
+<div class="wrap" id="userToolbar" style="padding-bottom:0;display:none"><div class="panel userbar" style="margin-bottom:0"><strong id="signedInLabel">المستخدم الحالي:</strong><span class="tag" id="signedInUser"></span><span class="muted" id="signedInRole"></span><button class="btn" id="logoutBtn" style="margin-inline-start:auto">تسجيل الخروج</button></div></div>
+<div class="auth-overlay" id="authOverlay"><div class="auth-card"><section id="loginPanel"><h2>تسجيل الدخول / Sign in</h2><p class="muted">سجّل الدخول بالبريد الإلكتروني وكلمة المرور اللذين زوّدك بهما مدير النظام.</p><form id="loginForm"><div class="grid"><div><label for="loginUser">البريد الإلكتروني</label><input id="loginUser" type="email" autocomplete="username" required placeholder="name@example.com"></div><div><label for="loginPass">كلمة المرور</label><input id="loginPass" type="password" autocomplete="current-password" required placeholder="أدخل كلمة المرور"></div></div><div class="actions"><button class="btn primary" id="loginSubmit" type="submit">دخول</button><button class="btn" id="forgotPasswordBtn" type="button">نسيت كلمة المرور؟</button></div><p id="loginError" class="danger" style="display:none"></p><p id="recoveryMessage" class="muted" style="display:none"></p></form></section><section id="resetPanel" style="display:none"><h2>تعيين كلمة مرور جديدة</h2><p class="muted">أدخل كلمة مرور جديدة لحسابك.</p><form id="resetForm"><label for="newPassword">كلمة المرور الجديدة (12 حرفًا على الأقل)</label><input id="newPassword" type="password" autocomplete="new-password" minlength="12" required><label for="confirmNewPassword">تأكيد كلمة المرور</label><input id="confirmNewPassword" type="password" autocomplete="new-password" minlength="12" required><div class="actions"><button class="btn primary" id="saveNewPasswordBtn" type="submit">حفظ كلمة المرور</button></div><p id="resetError" class="danger" style="display:none"></p><p id="resetMessage" class="muted" style="display:none"></p></form></section></div></div>
+<div class="wrap">
+<div class="stats">
+<div class="stat"><span>إجمالي التدخلات</span><strong id="s-total">0</strong></div>
+<div class="stat"><span>التدخلات الاستعجالية</span><strong id="s-emergency">0</strong></div>
+<div class="stat"><span>المتر الطولي المنجز (م)</span><strong id="s-linear">0</strong></div>
+<div class="stat"><span>النقاط السوداء المفتوحة</span><strong id="s-black">0</strong></div>
+</div>
+<nav>
+<button class="active" data-tab="daily">النشاط اليومي</button><button data-tab="black">النقاط السوداء</button><button data-tab="projects">المشاريع</button><button data-tab="reports">التقارير والإحصائيات</button><button data-tab="users" id="usersTab" style="display:none">إدارة المستخدمين</button>
+</nav>
+<section id="daily" class="section active">
+<div class="panel"><h2>إضافة تدخل أو نشاط ميداني</h2>
+
+<form id="dailyForm"><div class="grid">
+<div><label>التاريخ *</label><input type="date" id="d-date" required></div>
+<div><label>المركز / الوحدة *</label><input id="d-center" placeholder="اسم المركز أو الوحدة" required></div>
+<div><label>المقاطعة</label><input id="d-district" placeholder="اسم المقاطعة"></div>
+<div><label>البلدية *</label><input id="d-municipality" placeholder="اسم البلدية" required></div>
+<div><label>نوع التدخل *</label><select id="d-type"><option value="وقائي">وقائي</option><option value="استعجالي">استعجالي</option></select></div>
+<div><label>طريقة التسريح *</label><select id="d-method"><option value="هيدروميكانيكي">هيدروميكانيكي</option><option value="يدوي">يدوي</option><option value="أعمال أخرى">أعمال أخرى</option></select></div>
+<div><label>وقت البداية</label><input type="time" id="d-start"></div>
+<div><label>وقت النهاية</label><input type="time" id="d-end"></div>
+<div><label>المدة المحسوبة</label><input id="d-duration" readonly placeholder="تُحسب آلياً"></div>
+<div><label>عدد Les regards</label><input type="number" min="0" id="d-regards" value="0"></div>
+<div><label>حجم النفايات من Les regards (م³)</label><input type="number" min="0" step="0.01" id="d-regards-waste" value="0"></div>
+<div><label>عدد Les avaloirs</label><input type="number" min="0" id="d-avaloirs" value="0"></div>
+<div><label>حجم النفايات من Les avaloirs (م³)</label><input type="number" min="0" step="0.01" id="d-avaloirs-waste" value="0"></div>
+<div><label>Linéaire (متر طولي)</label><input type="number" min="0" step="0.1" id="d-linear" value="0"></div>
+<div><label>عدد تدخلات DVO</label><input type="number" min="0" id="d-dvo-count" value="0"></div>
+<div><label>طول DVO (م)</label><input type="number" min="0" step="0.1" id="d-dvo-length" value="0"></div>
+<div><label>نفايات DVO المستخرجة (م³)</label><input type="number" min="0" step="0.01" id="d-dvo-waste" value="0"></div>
+<div><label>عدد تدخلات OVD</label><input type="number" min="0" id="d-ovd-count" value="0"></div>
+<div><label>طول OVD (م)</label><input type="number" min="0" step="0.1" id="d-ovd-length" value="0"></div>
+<div><label>نفايات OVD المستخرجة (م³)</label><input type="number" min="0" step="0.01" id="d-ovd-waste" value="0"></div>
+<div><label>نفايات إجمالية أخرى مستخرجة (م³)</label><input type="number" min="0" step="0.01" id="d-waste" value="0"></div>
+<div><label>الموقع / العنوان</label><input id="d-location" placeholder="الشارع أو الحي أو معلم قريب"></div>
+<div class="wide"><label>الأعمال الأخرى / وصف التدخل</label><textarea id="d-work" placeholder="طبيعة العمل، سبب التدخل، الملاحظات..."></textarea></div>
+<div class="wide"><label>رابط الموقع أو إحداثيات GPS (اختياري)</label><input id="d-gps" placeholder="مثال: 36.75, 3.05 أو رابط خرائط"></div>
+</div><div class="actions"><button class="btn primary" type="submit">حفظ التدخل</button><button class="btn" type="reset">تفريغ الحقول</button></div></form></div>
+<div class="panel"><h2>سجل التدخلات</h2><div class="toolbar">
+<div><label>من تاريخ</label><input type="date" id="f-from"></div><div><label>إلى تاريخ</label><input type="date" id="f-to"></div>
+<div><label>المقاطعة</label><input id="f-district" placeholder="كل المقاطعات"></div><div><label>البلدية</label><input id="f-municipality" placeholder="كل البلديات"></div>
+<div><label>التصنيف</label><select id="f-type"><option value="">الكل</option><option value="وقائي">وقائي</option><option value="استعجالي">استعجالي</option></select></div>
+<div><label>طريقة التسريح</label><select id="f-method"><option value="">الكل</option><option value="هيدروميكانيكي">هيدروميكانيكي</option><option value="يدوي">يدوي</option><option value="أعمال أخرى">أعمال أخرى</option></select></div>
+</div><div class="actions" style="margin:0 0 12px"><button class="btn" id="clearFilters">إزالة الفلاتر</button><button class="btn dark" id="exportDaily">تصدير CSV</button></div>
+<div class="tablewrap"><table><thead><tr><th>التاريخ</th><th>المركز/الوحدة</th><th>المقاطعة</th><th>البلدية</th><th>التصنيف</th><th>الطريقة</th><th>المدة</th><th>Regards</th><th>نفايات Regards (م³)</th><th>Avaloirs</th><th>نفايات Avaloirs (م³)</th><th>المتر الطولي</th><th>عدد DVO</th><th>طول DVO (م)</th><th>نفايات DVO (م³)</th><th>عدد OVD</th><th>طول OVD (م)</th><th>نفايات OVD (م³)</th><th>نفايات أخرى (م³)</th><th>الموقع/الوصف</th><th>إجراء</th></tr></thead><tbody id="dailyRows"></tbody></table><div id="dailyEmpty" class="empty">لا توجد تدخلات مسجلة بعد.</div></div></div>
+</section>
+<section id="black" class="section"><div class="panel"><h2>تسجيل نقطة سوداء ومتابعة الإجراءات</h2>
+<form id="blackForm"><div class="grid">
+<div><label>تاريخ التسجيل *</label><input type="date" id="b-date" required></div><div><label>المقاطعة</label><input id="b-district"></div><div><label>البلدية *</label><input id="b-municipality" required></div><div><label>الموقع / الحي *</label><input id="b-location" required></div>
+<div><label>نوع المشكلة</label><select id="b-kind"><option value="انسداد متكرر">انسداد متكرر</option><option value="فيضان">فيضان</option><option value="انهيار أو كسر">انهيار أو كسر</option><option value="رائحة أو ترسبات">رائحة أو ترسبات</option><option value="نقص قدرة الشبكة">نقص قدرة الشبكة</option><option value="أخرى">أخرى</option></select></div>
+<div><label>درجة الأولوية</label><select id="b-priority"><option value="عادية">عادية</option><option value="متوسطة">متوسطة</option><option value="عالية">عالية</option><option value="حرجة">حرجة</option></select></div>
+<div><label>الحالة</label><select id="b-status"><option value="مفتوحة">مفتوحة</option><option value="قيد المعالجة">قيد المعالجة</option><option value="تمت المعالجة">تمت المعالجة</option><option value="تحتاج مشروعاً">تحتاج مشروعاً</option></select></div>
+<div><label>المسؤول / الوحدة المكلفة</label><input id="b-owner"></div>
+<div class="wide"><label>وصف المشكلة *</label><textarea id="b-desc" required></textarea></div><div class="wide"><label>الإجراءات المتخذة والمتابعة</label><textarea id="b-actions" placeholder="التاريخ، الإجراء، النتيجة، الإجراء القادم..."></textarea></div>
+<div><label>رابط الموقع أو GPS</label><input id="b-gps"></div><div><label>تاريخ آخر تحديث</label><input type="date" id="b-updated"></div>
+</div><div class="actions"><button class="btn primary" type="submit">حفظ النقطة السوداء</button><button class="btn dark" id="exportBlack" type="button">تصدير CSV</button></div></form></div>
+<div class="panel"><h2>سجل النقاط السوداء</h2><div class="tablewrap"><table><thead><tr><th>التاريخ</th><th>المقاطعة</th><th>البلدية</th><th>الموقع</th><th>المشكلة</th><th>الأولوية</th><th>الحالة</th><th>المسؤول</th><th>الوصف والإجراءات</th><th>إجراء</th></tr></thead><tbody id="blackRows"></tbody></table><div id="blackEmpty" class="empty">لا توجد نقاط سوداء مسجلة.</div></div></div>
+</section>
+<section id="projects" class="section"><div class="panel"><h2>متابعة مشاريع المؤسسة</h2>
+<form id="projectForm"><div class="grid">
+<div><label>اسم المشروع *</label><input id="p-name" required></div><div><label>المقاطعة</label><input id="p-district"></div><div><label>البلدية *</label><input id="p-municipality" required></div><div><label>نوع المشروع</label><select id="p-kind"><option value="توسعة شبكة">توسعة شبكة</option><option value="تجديد شبكة">تجديد شبكة</option><option value="إعادة تأهيل">إعادة تأهيل</option><option value="إنجاز محطة رفع">إنجاز محطة رفع</option><option value="صيانة كبرى">صيانة كبرى</option><option value="أخرى">أخرى</option></select></div>
+<div><label>المؤسسة المنجزة</label><input id="p-company"></div><div><label>تاريخ الانطلاق</label><input type="date" id="p-start"></div><div><label>تاريخ نهاية العقد</label><input type="date" id="p-end"></div><div><label>نسبة التقدم %</label><input type="number" min="0" max="100" id="p-progress" value="0"></div>
+<div><label>المبلغ (اختياري)</label><input type="number" min="0" step="0.01" id="p-cost"></div><div><label>حالة المشروع</label><select id="p-status"><option value="قيد الإنجاز">قيد الإنجاز</option><option value="لم ينطلق">لم ينطلق</option><option value="متوقف">متوقف</option><option value="مستلم مؤقتاً">مستلم مؤقتاً</option><option value="مستلم نهائياً">مستلم نهائياً</option></select></div><div class="wide"><label>الملاحظات والعراقيل والإجراءات</label><textarea id="p-notes"></textarea></div>
+</div><div class="actions"><button class="btn primary" type="submit">حفظ المشروع</button><button class="btn dark" id="exportProjects" type="button">تصدير CSV</button></div></form></div>
+<div class="panel"><h2>سجل المشاريع</h2><div class="tablewrap"><table><thead><tr><th>المشروع</th><th>المقاطعة</th><th>البلدية</th><th>النوع</th><th>المؤسسة</th><th>الانطلاق</th><th>النهاية</th><th>التقدم</th><th>المبلغ</th><th>الحالة</th><th>ملاحظات</th><th>إجراء</th></tr></thead><tbody id="projectRows"></tbody></table><div id="projectEmpty" class="empty">لا توجد مشاريع مسجلة.</div></div></div>
+</section>
+<section id="reports" class="section"><div class="panel"><h2>التقرير اليومي</h2><p class="muted">اختر يوماً لاستخراج ملخص النشاط.</p><div class="grid"><div><label for="dr-date">تاريخ التقرير</label><input type="date" id="dr-date"></div><div><label for="dr-district">المقاطعة</label><input id="dr-district" placeholder="كل المقاطعات"></div><div><label for="dr-municipality">البلدية</label><input id="dr-municipality" placeholder="كل البلديات"></div></div><div class="actions"><button class="btn primary" id="runDailyReport">إنشاء التقرير اليومي</button><button class="btn dark" id="exportDailyReport">تصدير التقرير اليومي CSV</button><button class="btn" id="printDailyReport">طباعة التقرير</button></div><div id="dailyReportResult" style="margin-top:16px"></div></div><div class="panel"><h2>التقارير الدورية</h2><p class="muted">الأسبوع من السبت إلى الجمعة.</p>
+<div class="grid"><div><label>نوع الفترة</label><select id="r-period"><option value="week">أسبوعي</option><option value="half1">نصف شهري (1–15)</option><option value="half2">نصف شهري (16–نهاية الشهر)</option><option value="month">شهري</option><option value="all">كل الفترات</option></select></div><div><label>الشهر</label><input type="month" id="r-month"></div><div><label>المقاطعة</label><input id="r-district"></div><div><label>البلدية</label><input id="r-municipality"></div></div>
+<div class="actions"><button class="btn primary" id="runReport">إنشاء التقرير</button><button class="btn dark" id="exportReport">تصدير تفاصيل التقرير CSV</button></div><div id="reportResult" style="margin-top:16px"></div></div></section>
+
+<section id="users" class="section">
+ <div class="panel">
+  <h2>إدارة المستخدمين</h2>
+  <div class="notice">يُنشئ مدير النظام الحسابات يدويًا ويسلّم لكل مستخدم بريده وكلمة مروره الأولية.</div>
+  <form id="managedUserForm">
+   <div class="grid">
+    <div><label for="mu-name">الاسم الكامل *</label><input id="mu-name" required maxlength="100"></div>
+    <div><label for="mu-email">البريد الإلكتروني *</label><input id="mu-email" type="email" required autocomplete="off"></div>
+    <div><label for="mu-password">كلمة مرور أولية *</label><input id="mu-password" type="password" required minlength="12" maxlength="128" autocomplete="new-password"></div>
+    <div><label for="mu-role">الدور</label><select id="mu-role"><option value="district_manager">مسؤول مقاطعة</option><option value="municipality_manager">مسؤول بلدية</option><option value="center_manager">مسؤول مركز</option><option value="field_agent">عون ميداني</option></select></div>
+    <div><label for="mu-district">المقاطعة / District</label><input id="mu-district" list="dl-district" required maxlength="100" autocomplete="off" placeholder="اكتب أو اختر اسم المقاطعة"><datalist id="dl-district"></datalist></div>
+    <div><label for="mu-municipality">البلدية / Municipality</label><input id="mu-municipality" list="dl-municipality" required disabled maxlength="100" autocomplete="off" placeholder="اكتب أو اختر اسم البلدية"><datalist id="dl-municipality"></datalist></div>
+    <div><label for="mu-center">المركز / Center</label><input id="mu-center" list="dl-center" required disabled maxlength="100" autocomplete="off" placeholder="اكتب أو اختر اسم المركز"><datalist id="dl-center"></datalist></div>
+   </div>
+   <div class="actions"><button class="btn primary" type="submit">إنشاء حساب فعلي</button></div>
+   <p class="muted" id="mu-permission-note"></p>
+  </form>
+ </div>
+ <div class="panel">
+  <div class="actions" style="justify-content:space-between"><h2>قائمة المستخدمين</h2><button class="btn" id="mu-refresh-users" type="button">تحديث القائمة</button></div>
+  <p class="muted">الحسابات المسجلة في النظام وصلاحياتها.</p>
+  <div class="tablewrap"><table><thead><tr><th>الاسم الكامل</th><th>الدور</th><th>المقاطعة</th><th>البلدية</th><th>المركز</th><th>الإجراء</th></tr></thead><tbody id="mu-user-rows"></tbody></table><div id="mu-user-empty" class="empty" style="display:none">لا توجد ملفات مستخدمين.</div></div>
+  <p id="mu-status" role="status" class="muted"></p>
+ </div>
+</section>
+
+</div><footer>منصة تسيير ومتابعة شبكات الصرف الصحي</footer>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4"></script>
+<script>
+const SUPABASE_URL = "https://dyeqfbmsgpdwkgieizxk.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_Aw7oS7YuvyfHWRpPdQSX8A_ka46GZKn";
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+const APP_URL = 'https://cool-duckanoo-98f355.netlify.app/';
+(function(){const l=localStorage.getItem('sewer_language')||'ar';document.documentElement.lang=l;document.documentElement.dir=l==='ar'?'rtl':'ltr';})();
+const $=id=>document.getElementById(id);
+const read=k=>{try{return JSON.parse(localStorage.getItem(k)||'[]')}catch(e){return []}};
+const save=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
+let daily=[], blacks=[], projects=[], lastReport=[];
+const today=new Date().toISOString().slice(0,10);
+['d-date','b-date','b-updated','r-month'].forEach(id=>{if($(id))$(id).value=id==='r-month'?today.slice(0,7):today});
+document.querySelectorAll('nav button').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('nav button').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.section').forEach(x=>x.classList.remove('active'));b.classList.add('active');$(b.dataset.tab).classList.add('active');if(b.dataset.tab==='users'&&typeof muLoadUsers==='function')muLoadUsers()}));
+function duration(){let a=$('d-start').value,b=$('d-end').value;if(!a||!b){$('d-duration').value='';return}let [ah,am]=a.split(':').map(Number),[bh,bm]=b.split(':').map(Number);let mins=bh*60+bm-(ah*60+am);if(mins<0)mins+=1440;$('d-duration').value=Math.floor(mins/60)+'h'+String(mins%60).padStart(2,'0')}
+$('d-start').addEventListener('change',duration);$('d-end').addEventListener('change',duration);
+function val(id){return $(id).value.trim()} function num(id){return Number($(id).value)||0}
+$('dailyForm').addEventListener('submit',async e=>{e.preventDefault();let item={id:Date.now(),date:val('d-date'),center:val('d-center'),district:val('d-district'),municipality:val('d-municipality'),type:val('d-type'),method:val('d-method'),start:val('d-start'),end:val('d-end'),duration:val('d-duration'),regards:num('d-regards'),regardsWaste:num('d-regards-waste'),avaloirs:num('d-avaloirs'),avaloirsWaste:num('d-avaloirs-waste'),linear:num('d-linear'),dvoCount:num('d-dvo-count'),dvoLength:num('d-dvo-length'),dvoWaste:num('d-dvo-waste'),ovdCount:num('d-ovd-count'),ovdLength:num('d-ovd-length'),ovdWaste:num('d-ovd-waste'),waste:num('d-waste'),location:val('d-location'),work:val('d-work'),gps:val('d-gps')};if(!await dbAdd('interventions',item,daily))return;e.target.reset();$('d-date').value=today;$('d-regards').value=$('d-regards-waste').value=$('d-avaloirs').value=$('d-avaloirs-waste').value='0';$('d-linear').value=$('d-dvo-count').value=$('d-dvo-length').value=$('d-dvo-waste').value=$('d-ovd-count').value=$('d-ovd-length').value=$('d-ovd-waste').value=$('d-waste').value='0';render();alert('تم حفظ التدخل بنجاح')});
+$('blackForm').addEventListener('submit',async e=>{e.preventDefault();if(!await dbAdd('black_spots',{id:Date.now(),date:val('b-date'),district:val('b-district'),municipality:val('b-municipality'),location:val('b-location'),kind:val('b-kind'),priority:val('b-priority'),status:val('b-status'),owner:val('b-owner'),desc:val('b-desc'),actions:val('b-actions'),gps:val('b-gps'),updated:val('b-updated')},blacks))return;e.target.reset();$('b-date').value=$('b-updated').value=today;render();alert('تم حفظ النقطة السوداء')});
+$('projectForm').addEventListener('submit',async e=>{e.preventDefault();if(!await dbAdd('projects',{id:Date.now(),name:val('p-name'),district:val('p-district'),municipality:val('p-municipality'),kind:val('p-kind'),company:val('p-company'),start:val('p-start'),end:val('p-end'),progress:num('p-progress'),cost:num('p-cost'),status:val('p-status'),notes:val('p-notes')},projects))return;e.target.reset();$('p-progress').value=0;render();alert('تم حفظ المشروع')});
+async function dbAdd(table,item,arr){
+ const payload={...item};delete payload.id;
+ const {data,error}=await supabaseClient.from(table).insert({data:payload,district_id:currentUser.districtId||null,municipality_id:currentUser.municipalityId||null,center_id:currentUser.centerId||null}).select('id').single();
+ if(error||!data){alert((window.tr?window.tr('تعذر حفظ البيانات. تحقق من الاتصال والصلاحيات.'):'')+' ['+((error&&error.message)||'')+']');return false;}
+ item.id=data.id;arr.unshift(item);return true;}
+async function dbDel(table,id){const {error}=await supabaseClient.from(table).delete().eq('id',id);if(error){alert('تعذر الحذف. تحقق من الصلاحيات.');return false;}return true;}
+async function loadAll(){
+ const get=async t=>{const {data,error}=await supabaseClient.from(t).select('id,data').order('created_at',{ascending:false});if(error)throw error;return (data||[]).map(r=>({...r.data,id:r.id}));};
+ try{[daily,blacks,projects]=await Promise.all([get('interventions'),get('black_spots'),get('projects')]);}catch(e){alert((window.tr?window.tr('تعذر تحميل البيانات من الخادم.'):'')+' ['+((e&&e.message)||e)+']');}
+ render();makeReport();runDailyReport();}
+function applyScopeDefaults(){const u=currentUser;if(!u||!u.scope||u.role==='admin')return;
+ [['d-district','d'],['b-district','d'],['p-district','d'],['d-municipality','m'],['b-municipality','m'],['p-municipality','m'],['d-center','c']].forEach(([id,k])=>{const el=$(id);if(el&&u.scope[k]){el.value=u.scope[k];el.readOnly=true;}});}
+async function fillScope(){
+ const u=currentUser,g=async(t,id)=>{if(!id)return '';const {data}=await supabaseClient.from(t).select('name').eq('id',id).maybeSingle();return data?.name||'';};
+ u.scope={d:await g('districts',u.districtId),m:await g('municipalities',u.municipalityId),c:await g('centers',u.centerId)};applyScopeDefaults();}
+['dailyForm','blackForm','projectForm'].forEach(id=>$(id).addEventListener('reset',()=>setTimeout(applyScopeDefaults)));
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function canDel(kind){const r=currentUser&&currentUser.role;return kind==='p'?r==='admin':['admin','district'].includes(r);}
+const TBL={d:'interventions',b:'black_spots',p:'projects'};
+async function del(kind,id){if(!canDel(kind)){alert('ليس لديك صلاحية حذف هذا السجل');return;}if(!confirm('هل تريد حذف هذا السجل؟'))return;if(!await dbDel(TBL[kind],id))return;if(kind==='d')daily=daily.filter(x=>x.id!==id);if(kind==='b')blacks=blacks.filter(x=>x.id!==id);if(kind==='p')projects=projects.filter(x=>x.id!==id);render();makeReport();runDailyReport();}
+function row(cells,kind,id){return '<tr>'+cells.map(x=>'<td>'+x+'</td>').join('')+'<td>'+(canDel(kind)?'<button class="btn warn smallbtn" onclick="del(\''+kind+'\',\''+esc(id)+'\')">حذف</button>':'')+'</td></tr>'}
+function filteredDaily(){return daily.filter(x=>(!val('f-from')||x.date>=val('f-from'))&&(!val('f-to')||x.date<=val('f-to'))&&(!val('f-district')||x.district.includes(val('f-district')))&&(!val('f-municipality')||x.municipality.includes(val('f-municipality')))&&(!val('f-type')||x.type===val('f-type'))&&(!val('f-method')||x.method===val('f-method')))}
+function render(){let ds=filteredDaily();$('dailyRows').innerHTML=ds.map(x=>row([esc(x.date),esc(x.center),esc(x.district),esc(x.municipality),'<span class="tag '+(x.type==='استعجالي'?'emergency':'')+'">'+esc(x.type)+'</span>',esc(x.method),esc(x.duration),x.regards,x.regardsWaste||0,x.avaloirs,x.avaloirsWaste||0,x.linear,x.dvoCount,x.dvoLength,x.dvoWaste,x.ovdCount,x.ovdLength,x.ovdWaste,x.waste,esc([x.location,x.work].filter(Boolean).join(' — '))],'d',x.id)).join('');$('dailyEmpty').style.display=ds.length?'none':'block';
+$('blackRows').innerHTML=blacks.map(x=>row([esc(x.date),esc(x.district),esc(x.municipality),esc(x.location),esc(x.kind),esc(x.priority),'<span class="tag '+(x.status==='مفتوحة'?'emergency':'')+'">'+esc(x.status)+'</span>',esc(x.owner),esc(x.desc+' — '+x.actions)],'b',x.id)).join('');$('blackEmpty').style.display=blacks.length?'none':'block';
+$('projectRows').innerHTML=projects.map(x=>row([esc(x.name),esc(x.district),esc(x.municipality),esc(x.kind),esc(x.company),esc(x.start),esc(x.end),esc(x.progress)+'%',esc(x.cost||''),esc(x.status),esc(x.notes)],'p',x.id)).join('');$('projectEmpty').style.display=projects.length?'none':'block';
+$('s-total').textContent=daily.length;$('s-emergency').textContent=daily.filter(x=>x.type==='استعجالي').length;$('s-linear').textContent=daily.reduce((a,x)=>a+x.linear,0).toLocaleString(document.documentElement.lang==='ar'?'ar-DZ':document.documentElement.lang);$('s-black').textContent=blacks.filter(x=>x.status==='مفتوحة'||x.status==='قيد المعالجة').length;
+}
+['f-from','f-to','f-district','f-municipality','f-type','f-method'].forEach(id=>$(id).addEventListener('input',render));
+$('clearFilters').onclick=()=>{['f-from','f-to','f-district','f-municipality','f-type','f-method'].forEach(id=>$(id).value='');render()};
+function csvDownload(filename,rows){rows=rows.map(r=>r.map(v=>window.tr?window.tr(v):v));let csv='\ufeff'+rows.map(r=>r.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(';')).join('\r\n');let blob=new Blob([csv],{type:'text/csv;charset=utf-8;'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=filename;a.click();URL.revokeObjectURL(a.href)}
+$('exportDaily').onclick=()=>csvDownload('sewer-interventions.csv',[['التاريخ','المركز','المقاطعة','البلدية','التصنيف','الطريقة','المدة','Regards','نفايات Regards (م³)','Avaloirs','نفايات Avaloirs (م³)','Linéaire (م)','عدد DVO','طول DVO (م)','نفايات DVO (م³)','عدد OVD','طول OVD (م)','نفايات OVD (م³)','نفايات أخرى (م³)','الموقع','الأعمال'],...filteredDaily().map(x=>[x.date,x.center,x.district,x.municipality,x.type,x.method,x.duration,x.regards,x.regardsWaste||0,x.avaloirs,x.avaloirsWaste||0,x.linear,x.dvoCount,x.dvoLength,x.dvoWaste,x.ovdCount,x.ovdLength,x.ovdWaste,x.waste,x.location,x.work])]);
+$('exportBlack').onclick=()=>csvDownload('black-spots.csv',[['التاريخ','المقاطعة','البلدية','الموقع','المشكلة','الأولوية','الحالة','المسؤول','الوصف','الإجراءات'],...blacks.map(x=>[x.date,x.district,x.municipality,x.location,x.kind,x.priority,x.status,x.owner,x.desc,x.actions])]);
+$('exportProjects').onclick=()=>csvDownload('projects.csv',[['المشروع','المقاطعة','البلدية','النوع','المؤسسة','الانطلاق','النهاية','التقدم','المبلغ','الحالة','ملاحظات'],...projects.map(x=>[x.name,x.district,x.municipality,x.kind,x.company,x.start,x.end,x.progress,x.cost,x.status,x.notes])]);
+function inPeriod(date,period,month){if(!date)return false;if(period==='all')return true;if(month&&date.slice(0,7)!==month)return false;let d=new Date(date+'T12:00:00');if(period==='month')return true;if(period==='half1')return d.getDate()<=15;if(period==='half2')return d.getDate()>=16;if(period==='week'){let now=new Date();let diff=(now.getDay()+1)%7;let start=new Date(now);start.setDate(now.getDate()-diff);start.setHours(0,0,0,0);let end=new Date(start);end.setDate(start.getDate()+7);return d>=start&&d<end}return true}
+function makeReport(){let p=val('r-period'),m=val('r-month'),district=val('r-district'),mun=val('r-municipality');lastReport=daily.filter(x=>inPeriod(x.date,p,m)&&(!district||x.district.includes(district))&&(!mun||x.municipality.includes(mun)));let count=lastReport.length,em=lastReport.filter(x=>x.type==='استعجالي').length,prev=count-em,lin=lastReport.reduce((a,x)=>a+x.linear,0),waste=lastReport.reduce((a,x)=>a+(x.waste||0)+(x.dvoWaste||0)+(x.ovdWaste||0)+(x.regardsWaste||0)+(x.avaloirsWaste||0),0),reg=lastReport.reduce((a,x)=>a+(x.regards||0),0),av=lastReport.reduce((a,x)=>a+x.avaloirs,0);let byMethod=['هيدروميكانيكي','يدوي','أعمال أخرى'].map(k=>'<tr><td>'+k+'</td><td>'+lastReport.filter(x=>x.method===k).length+'</td><td>'+lastReport.filter(x=>x.method===k).reduce((a,x)=>a+x.linear,0)+'</td><td>'+lastReport.filter(x=>x.method===k).reduce((a,x)=>a+(x.waste||0)+(x.dvoWaste||0)+(x.ovdWaste||0)+(x.regardsWaste||0)+(x.avaloirsWaste||0),0)+'</td></tr>').join('');$('reportResult').innerHTML='<div class="stats"><div class="stat"><span>إجمالي التدخلات</span><strong>'+count+'</strong></div><div class="stat"><span>وقائي</span><strong>'+prev+'</strong></div><div class="stat"><span>استعجالي</span><strong>'+em+'</strong></div><div class="stat"><span>المتر الطولي / النفايات</span><strong>'+lin+(document.documentElement.lang==='ar'?' م':' m')+'</strong><span>'+waste+(document.documentElement.lang==='ar'?' م³':' m³')+'</span></div></div><p>عدد Les regards: <b>'+reg+'</b> — عدد Les avaloirs: <b>'+av+'</b></p><div class="tablewrap"><table><thead><tr><th>طريقة العمل</th><th>عدد التدخلات</th><th>المتر الطولي (م)</th><th>النفايات (م³)</th></tr></thead><tbody>'+byMethod+'</tbody></table></div><p class="muted">ملاحظة: الأسبوع من السبت إلى الجمعة.</p>'}
+$('runReport').onclick=makeReport;$('exportReport').onclick=()=>csvDownload('periodic-report-details.csv',[['التاريخ','المركز','المقاطعة','البلدية','التصنيف','الطريقة','المدة','Regards','نفايات Regards (م³)','Avaloirs','نفايات Avaloirs (م³)','Linéaire (م)','عدد DVO','طول DVO (م)','نفايات DVO (م³)','عدد OVD','طول OVD (م)','نفايات OVD (م³)','نفايات أخرى (م³)','الموقع','الأعمال'],...lastReport.map(x=>[x.date,x.center,x.district,x.municipality,x.type,x.method,x.duration,x.regards,x.regardsWaste||0,x.avaloirs,x.avaloirsWaste||0,x.linear,x.dvoCount,x.dvoLength,x.dvoWaste,x.ovdCount,x.ovdLength,x.ovdWaste,x.waste,x.location,x.work])]);
+render();makeReport();
+
+// Supabase authentication. Operational records remain local in this version and are not protected by RLS yet.
+const ROLE_AR={admin:'مدير النظام — جميع الصلاحيات',director:'المديرية العامة',district:'مسؤول مقاطعة',center:'المركز / البلدية / عون ميداني',projects:'مسؤول المشاريع'};
+let currentUser=null;
+let recoveryInProgress=false;
+function appRoleFor(dbRole){
+ if(dbRole==='system_admin') return 'admin';
+ if(dbRole==='district_manager') return 'district';
+ if(dbRole==='municipality_manager'||dbRole==='center_manager'||dbRole==='field_agent') return 'center';
+ return null;
+}
+function applyRole(){
+ const role=currentUser.role;
+ $('authOverlay').style.display='none';$('userToolbar').style.display='block';$('signedInUser').textContent=currentUser.name+' ('+currentUser.username+')';$('signedInRole').textContent=ROLE_AR[role]||role;
+ document.querySelectorAll('nav button').forEach(b=>{b.style.display='';});
+ if(role==='center'){
+   document.querySelectorAll('nav button').forEach(b=>{if(!['daily','reports'].includes(b.dataset.tab))b.style.display='none';});
+   document.querySelectorAll('#dailyRows button').forEach(el=>el.style.display='none');
+ } else if(role==='projects'){
+   document.querySelectorAll('nav button').forEach(b=>{if(!['projects','reports'].includes(b.dataset.tab))b.style.display='none';});
+ } else if(role==='district'){
+   document.querySelectorAll('nav button').forEach(b=>{if(b.dataset.tab==='projects')b.style.display='none';});
+ }
+ document.querySelectorAll('form').forEach(f=>f.dataset.role=role);
+ if(typeof muApplyRole==='function'){muApplyRole();muLoadScopes();}
+}
+function showLoginError(message){$('loginError').textContent=message;$('loginError').style.display='block';}
+async function loadSignedInUser(user){
+ if(recoveryInProgress){showResetPanel();return;}
+ if(!user){currentUser=null;$('authOverlay').style.display='flex';$('userToolbar').style.display='none';return;}
+ const {data:profile,error}=await supabaseClient.from('profiles').select('id,full_name,role,district_id,municipality_id,center_id').eq('id',user.id).single();
+ if(error||!profile){await supabaseClient.auth.signOut();currentUser=null;$('authOverlay').style.display='flex';$('userToolbar').style.display='none';showLoginError('تعذر العثور على ملف المستخدم. اطلب من مدير النظام التحقق من الحساب.');return;}
+ const role=appRoleFor(profile.role);
+ if(!role){await supabaseClient.auth.signOut();currentUser=null;$('authOverlay').style.display='flex';$('userToolbar').style.display='none';showLoginError('دور هذا الحساب غير مدعوم في واجهة التطبيق الحالية.');return;}
+ currentUser={id:user.id,email:user.email,username:user.email||'',name:profile.full_name||user.email,role,dbRole:profile.role,districtId:profile.district_id,municipalityId:profile.municipality_id,centerId:profile.center_id};
+ $('loginError').style.display='none';await loadAll();await fillScope();applyRole();
+}
+$('loginForm').addEventListener('submit',async e=>{
+ e.preventDefault();const button=$('loginSubmit');button.disabled=true;button.textContent='جارٍ التحقق…';$('loginError').style.display='none';
+ try{
+  const email=$('loginUser').value.trim(),password=$('loginPass').value;
+  const {data,error}=await supabaseClient.auth.signInWithPassword({email,password});
+  if(error||!data.user){showLoginError('تعذر تسجيل الدخول. تحقق من البريد الإلكتروني وكلمة المرور، أو اطلب من مدير النظام التأكد من إنشاء الحساب.');return;}
+  await loadSignedInUser(data.user);
+ }catch(err){showLoginError('تعذر الاتصال بالخادم. تحقق من اتصال الإنترنت ثم أعد المحاولة.');}
+ finally{button.disabled=false;button.textContent='دخول';}
+});
+function showResetPanel(){ $('loginPanel').style.display='none'; $('resetPanel').style.display='block'; $('authOverlay').style.display='flex'; $('userToolbar').style.display='none'; }
+function showLoginPanel(){ $('resetPanel').style.display='none'; $('loginPanel').style.display='block'; }
+$('forgotPasswordBtn').addEventListener('click',async()=>{
+ const email=$('loginUser').value.trim();
+ $('loginError').style.display='none'; $('recoveryMessage').style.display='none';
+ if(!email){showLoginError('اكتب بريدك الإلكتروني أولًا ثم اضغط «نسيت كلمة المرور؟».');return;}
+ const btn=$('forgotPasswordBtn');btn.disabled=true;btn.textContent='جارٍ إرسال رسالة الاستعادة…';
+ try{
+  const {error}=await supabaseClient.auth.resetPasswordForEmail(email,{redirectTo:APP_URL});
+  if(error) throw error;
+  $('recoveryMessage').textContent='إذا كان البريد مسجلًا، ستصلك رسالة استعادة. افتحها على هذا الموقع ثم عيّن كلمة مرور جديدة.';
+  $('recoveryMessage').style.display='block';
+ }catch(err){showLoginError('تعذر إرسال رسالة الاستعادة. حاول لاحقًا أو راجع مدير النظام.');}
+ finally{btn.disabled=false;btn.textContent='نسيت كلمة المرور؟';}
+});
+$('resetForm').addEventListener('submit',async e=>{
+ e.preventDefault();$('resetError').style.display='none';$('resetMessage').style.display='none';
+ const password=$('newPassword').value, confirm=$('confirmNewPassword').value;
+ if(password.length<12){$('resetError').textContent='استخدم كلمة مرور من 12 حرفًا على الأقل.';$('resetError').style.display='block';return;}
+ if(password!==confirm){$('resetError').textContent='كلمتا المرور غير متطابقتين.';$('resetError').style.display='block';return;}
+ const btn=$('saveNewPasswordBtn');btn.disabled=true;btn.textContent='جارٍ الحفظ…';
+ try{
+  const {error}=await supabaseClient.auth.updateUser({password});
+  if(error) throw error;
+  $('resetMessage').textContent='تم تحديث كلمة المرور بنجاح. سجّل الخروج ثم ادخل بكلمة المرور الجديدة.';$('resetMessage').style.display='block';
+  $('resetForm').reset();
+  setTimeout(async()=>{await supabaseClient.auth.signOut();recoveryInProgress=false;showLoginPanel();$('loginUser').focus();},1800);
+ }catch(err){$('resetError').textContent='تعذر تحديث كلمة المرور. اطلب رسالة استعادة جديدة، فقد انتهت صلاحية الرابط.';$('resetError').style.display='block';}
+ finally{btn.disabled=false;btn.textContent='حفظ كلمة المرور';}
+});
+supabaseClient.auth.onAuthStateChange((event,session)=>{
+ if(event==='PASSWORD_RECOVERY'){recoveryInProgress=true;showResetPanel();}
+});
+if(new URLSearchParams(window.location.search).has('reset-password') || (window.location.hash.includes('type=recovery'))){recoveryInProgress=true;showResetPanel();}
+$('logoutBtn').addEventListener('click',async()=>{await supabaseClient.auth.signOut();location.reload();currentUser=null;$('authOverlay').style.display='flex';$('userToolbar').style.display='none';});
+(async()=>{try{const {data}=await supabaseClient.auth.getSession();if(data?.session?.user)await loadSignedInUser(data.session.user);}catch(e){showLoginError('تعذر استعادة جلسة الدخول. سجّل الدخول من جديد.');}})();
+// Permission guard on write actions (demo only; not a security boundary).
+const _dailySubmit=$('dailyForm').onsubmit;
+$('dailyForm').addEventListener('submit',e=>{if(!currentUser||!['admin','director','district','center'].includes(currentUser.role)){e.preventDefault();e.stopImmediatePropagation();alert('ليس لديك صلاحية تسجيل التدخلات');}},true);
+$('blackForm').addEventListener('submit',e=>{if(!currentUser||!['admin','director','district'].includes(currentUser.role)){e.preventDefault();e.stopImmediatePropagation();alert('ليس لديك صلاحية إدارة النقاط السوداء');}},true);
+$('projectForm').addEventListener('submit',e=>{if(!currentUser||!['admin','director','projects'].includes(currentUser.role)){e.preventDefault();e.stopImmediatePropagation();alert('ليس لديك صلاحية إدارة المشاريع');}},true);
+
+// Daily report for a chosen date.
+$('dr-date').value=today;let lastDailyReport=[];
+function runDailyReport(){const date=$('dr-date').value,district=$('dr-district').value.trim(),mun=$('dr-municipality').value.trim();lastDailyReport=daily.filter(x=>x.date===date&&(!district||(x.district||'').includes(district))&&(!mun||(x.municipality||'').includes(mun)));const total=lastDailyReport.length,em=lastDailyReport.filter(x=>x.type==='استعجالي').length,preventive=total-em,linear=lastDailyReport.reduce((a,x)=>a+(x.linear||0)+(x.dvoLength||0)+(x.ovdLength||0),0),waste=lastDailyReport.reduce((a,x)=>a+(x.waste||0)+(x.dvoWaste||0)+(x.ovdWaste||0)+(x.regardsWaste||0)+(x.avaloirsWaste||0),0),regards=lastDailyReport.reduce((a,x)=>a+(x.regards||0),0),avaloirs=lastDailyReport.reduce((a,x)=>a+(x.avaloirs||0),0),duration=lastDailyReport.map(x=>x.duration).filter(Boolean).join('، ')||'—';
+$('dailyReportResult').innerHTML='<h3><span>تقرير يوم</span> '+esc(date||'—')+'</h3><div class="daily-report-grid"><div class="stat"><span>إجمالي التدخلات</span><strong>'+total+'</strong></div><div class="stat"><span>وقائي</span><strong>'+preventive+'</strong></div><div class="stat"><span>استعجالي</span><strong>'+em+'</strong></div><div class="stat"><span>المتر الطولي (م)</span><strong>'+linear.toLocaleString()+'</strong></div><div class="stat"><span>النفايات المستخرجة (م³)</span><strong>'+waste.toLocaleString()+'</strong></div><div class="stat"><span>Les regards</span><strong>'+regards+'</strong></div><div class="stat"><span>Les avaloirs</span><strong>'+avaloirs+'</strong></div></div><div class="tablewrap"><table><thead><tr><th>المركز/الوحدة</th><th>المقاطعة</th><th>البلدية</th><th>النوع</th><th>طريقة التسريح</th><th>المدة</th><th>المتر الطولي</th><th>عدد DVO</th><th>طول DVO</th><th>نفايات DVO م³</th><th>عدد OVD</th><th>طول OVD</th><th>نفايات OVD م³</th><th>نفايات أخرى م³</th><th>الموقع والأعمال</th></tr></thead><tbody>'+lastDailyReport.map(x=>'<tr>'+[x.center,x.district,x.municipality,x.type,x.method,x.duration,x.linear,x.dvoCount,x.dvoLength,x.dvoWaste,x.ovdCount,x.ovdLength,x.ovdWaste,x.waste,[x.location,x.work].filter(Boolean).join(' — ')].map(v=>'<td>'+esc(v??'')+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>'+(total?'':'<p class="muted">لا توجد تدخلات مسجلة لهذا التاريخ ضمن الفلاتر المحددة.</p>');}
+$('runDailyReport').addEventListener('click',runDailyReport);
+$('exportDailyReport').addEventListener('click',()=>csvDownload('daily-report-'+($('dr-date').value||'date')+'.csv',[['التاريخ','المركز/الوحدة','المقاطعة','البلدية','النوع','طريقة التسريح','المدة','Regards','نفايات Regards (م³)','Avaloirs','نفايات Avaloirs (م³)','Linéaire (م)','عدد DVO','طول DVO (م)','نفايات DVO (م³)','عدد OVD','طول OVD (م)','نفايات OVD (م³)','نفايات أخرى (م³)','الموقع','الأعمال'],...lastDailyReport.map(x=>[x.date,x.center,x.district,x.municipality,x.type,x.method,x.duration,x.regards,x.regardsWaste||0,x.avaloirs,x.avaloirsWaste||0,x.linear,x.dvoCount,x.dvoLength,x.dvoWaste,x.ovdCount,x.ovdLength,x.ovdWaste,x.waste,x.location,x.work])]));
+$('printDailyReport').addEventListener('click',()=>{runDailyReport();window.print()});
+runDailyReport();
+</script>
+<script>
+const uiDict={
+ar:{'النشاط اليومي':'النشاط اليومي','النقاط السوداء':'النقاط السوداء','المشاريع':'المشاريع','التقارير والإحصائيات':'التقارير والإحصائيات','إضافة تدخل أو نشاط ميداني':'إضافة تدخل أو نشاط ميداني','سجل التدخلات':'سجل التدخلات','تسجيل نقطة سوداء ومتابعة الإجراءات':'تسجيل نقطة سوداء ومتابعة الإجراءات','سجل النقاط السوداء':'سجل النقاط السوداء','متابعة مشاريع المؤسسة':'متابعة مشاريع المؤسسة','سجل المشاريع':'سجل المشاريع','التقارير الدورية':'التقارير الدورية','حفظ التدخل':'حفظ التدخل','تفريغ الحقول':'تفريغ الحقول','إزالة الفلاتر':'إزالة الفلاتر','تصدير CSV':'تصدير CSV','حفظ النقطة السوداء':'حفظ النقطة السوداء','حفظ المشروع':'حفظ المشروع','إنشاء التقرير':'إنشاء التقرير','تصدير تفاصيل التقرير CSV':'تصدير تفاصيل التقرير CSV','لا توجد تدخلات مسجلة بعد.':'لا توجد تدخلات مسجلة بعد.','لا توجد نقاط سوداء مسجلة.':'لا توجد نقاط سوداء مسجلة.','لا توجد مشاريع مسجلة.':'لا توجد مشاريع مسجلة.','التاريخ':'التاريخ','المركز / الوحدة *':'المركز / الوحدة *','المقاطعة':'المقاطعة','البلدية *':'البلدية *','نوع التدخل *':'نوع التدخل *','طريقة التسريح *':'طريقة التسريح *','وقت البداية':'وقت البداية','وقت النهاية':'وقت النهاية','المدة المحسوبة':'المدة المحسوبة','عدد Les regards':'عدد Les regards','عدد Les avaloirs':'عدد Les avaloirs','Linéaire (متر طولي)':'Linéaire (متر طولي)','عدد تدخلات DVO':'عدد تدخلات DVO','طول DVO (م)':'طول DVO (م)','نفايات DVO المستخرجة (م³)':'نفايات DVO المستخرجة (م³)','عدد تدخلات OVD':'عدد تدخلات OVD','طول OVD (م)':'طول OVD (م)','نفايات OVD المستخرجة (م³)':'نفايات OVD المستخرجة (م³)','نفايات إجمالية أخرى مستخرجة (م³)':'نفايات إجمالية أخرى مستخرجة (م³)','الموقع / العنوان':'الموقع / العنوان','الأعمال الأخرى / وصف التدخل':'الأعمال الأخرى / وصف التدخل','رابط الموقع أو إحداثيات GPS (اختياري)':'رابط الموقع أو إحداثيات GPS (اختياري)'},
+fr:{'النشاط اليومي':'Activité quotidienne','النقاط السوداء':'Points noirs','المشاريع':'Projets','التقارير والإحصائيات':'Rapports et statistiques','إضافة تدخل أو نشاط ميداني':'Ajouter une intervention ou activité terrain','سجل التدخلات':'Registre des interventions','تسجيل نقطة سوداء ومتابعة الإجراءات':'Enregistrer un point noir et suivre les actions','سجل النقاط السوداء':'Registre des points noirs','متابعة مشاريع المؤسسة':'Suivi des projets de l’entreprise','سجل المشاريع':'Registre des projets','التقارير الدورية':'Rapports périodiques','حفظ التدخل':'Enregistrer l’intervention','تفريغ الحقول':'Vider les champs','إزالة الفلاتر':'Effacer les filtres','تصدير CSV':'Exporter CSV','حفظ النقطة السوداء':'Enregistrer le point noir','حفظ المشروع':'Enregistrer le projet','إنشاء التقرير':'Générer le rapport','تصدير تفاصيل التقرير CSV':'Exporter le détail du rapport CSV','لا توجد تدخلات مسجلة بعد.':'Aucune intervention enregistrée.','لا توجد نقاط سوداء مسجلة.':'Aucun point noir enregistré.','لا توجد مشاريع مسجلة.':'Aucun projet enregistré.','التاريخ':'Date','المركز / الوحدة *':'Centre / unité *','المقاطعة':'District','البلدية *':'Commune *','نوع التدخل *':'Type d’intervention *','طريقة التسريح *':'Méthode de curage *','هيدروميكانيكي':'Hydro-mécanique','يدوي':'Manuel','أعمال أخرى':'Autre','وقت البداية':'Heure de début','وقت النهاية':'Heure de fin','المدة المحسوبة':'Durée calculée','عدد Les regards':'Nombre de regards','عدد Les avaloirs':'Nombre d’avaloirs','Linéaire (متر طولي)':'Linéaire (mètres)','عدد تدخلات DVO':'Nombre d’interventions DVO','طول DVO (م)':'Longueur DVO (m)','نفايات DVO المستخرجة (م³)':'Déchets DVO extraits (m³)','عدد تدخلات OVD':'Nombre d’interventions OVD','طول OVD (م)':'Longueur OVD (m)','نفايات OVD المستخرجة (م³)':'Déchets OVD extraits (m³)','نفايات إجمالية أخرى مستخرجة (م³)':'Autres déchets extraits (m³)','الموقع / العنوان':'Emplacement / adresse','الأعمال الأخرى / وصف التدخل':'Autres travaux / description','رابط الموقع أو إحداثيات GPS (اختياري)':'Lien cartographique ou coordonnées GPS (facultatif)'},
+en:{'النشاط اليومي':'Daily operations','النقاط السوداء':'Black spots','المشاريع':'Projects','التقارير والإحصائيات':'Reports & statistics','إضافة تدخل أو نشاط ميداني':'Add intervention or field activity','سجل التدخلات':'Intervention log','تسجيل نقطة سوداء ومتابعة الإجراءات':'Register a black spot and track actions','سجل النقاط السوداء':'Black spot register','متابعة مشاريع المؤسسة':'Organization project tracking','سجل المشاريع':'Project register','التقارير الدورية':'Periodic reports','حفظ التدخل':'Save intervention','تفريغ الحقول':'Clear fields','إزالة الفلاتر':'Clear filters','تصدير CSV':'Export CSV','حفظ النقطة السوداء':'Save black spot','حفظ المشروع':'Save project','إنشاء التقرير':'Generate report','تصدير تفاصيل التقرير CSV':'Export report details CSV','لا توجد تدخلات مسجلة بعد.':'No interventions recorded yet.','لا توجد نقاط سوداء مسجلة.':'No black spots recorded.','لا توجد مشاريع مسجلة.':'No projects recorded.','التاريخ':'Date','المركز / الوحدة *':'Centre / unit *','المقاطعة':'District','البلدية *':'Municipality *','نوع التدخل *':'Intervention type *','طريقة التسريح *':'Cleaning method *','هيدروميكانيكي':'Hydromechanical','يدوي':'Manual','أعمال أخرى':'Other','وقت البداية':'Start time','وقت النهاية':'End time','المدة المحسوبة':'Calculated duration','عدد Les regards':'Number of manholes','عدد Les avaloirs':'Number of storm drains','Linéaire (متر طولي)':'Linear length (m)','عدد تدخلات DVO':'DVO intervention count','طول DVO (م)':'DVO length (m)','نفايات DVO المستخرجة (م³)':'DVO waste extracted (m³)','عدد تدخلات OVD':'OVD intervention count','طول OVD (م)':'OVD length (m)','نفايات OVD المستخرجة (م³)':'OVD waste extracted (m³)','نفايات إجمالية أخرى مستخرجة (م³)':'Other waste extracted (m³)','الموقع / العنوان':'Location / address','الأعمال الأخرى / وصف التدخل':'Other works / intervention details','رابط الموقع أو إحداثيات GPS (اختياري)':'Map link or GPS coordinates (optional)'}
+};
+function setUILanguage(lang){
+ const dict=uiDict[lang]||uiDict.ar;
+ document.documentElement.lang=lang;
+ document.documentElement.dir=lang==='ar'?'rtl':'ltr';
+ // Translate visible text only; never touch JavaScript/CSS source nodes.
+ const walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);
+ const nodes=[];
+ while(walker.nextNode()){
+   const n=walker.currentNode;
+   const parent=n.parentElement;
+   if(parent && !parent.closest('script,style,noscript,textarea')) nodes.push(n);
+ }
+ nodes.forEach(n=>{
+   const raw=n.nodeValue;
+   const key=raw.trim();
+   if(key && Object.prototype.hasOwnProperty.call(dict,key)) n.nodeValue=raw.replace(key,dict[key]);
+ });
+ // Translate labels and common field hints without changing input values or IDs.
+ document.querySelectorAll('label').forEach(el=>{
+   const key=el.textContent.trim();
+   if(Object.prototype.hasOwnProperty.call(dict,key)) el.textContent=dict[key];
+ });
+ document.querySelectorAll('[placeholder],[title]').forEach(el=>{
+   ['placeholder','title'].forEach(attr=>{
+     const key=el.getAttribute(attr);
+     if(key && Object.prototype.hasOwnProperty.call(dict,key)) el.setAttribute(attr,dict[key]);
+   });
+ });
+ localStorage.setItem('sewer_language',lang);
+}
+const langSelect=document.getElementById('languageSelect');langSelect.value=localStorage.getItem('sewer_language')||'ar';langSelect.addEventListener('change',()=>{localStorage.setItem('sewer_language',langSelect.value);location.reload()});
+window.addEventListener('DOMContentLoaded',()=>setUILanguage(langSelect.value));
+</script>
+
+<script>
+
+// Supabase-backed user creation. The server function must enforce system_admin authorization.
+const MU_LABELS={district_manager:'مسؤول مقاطعة',municipality_manager:'مسؤول بلدية',center_manager:'مسؤول مركز',field_agent:'عون ميداني',system_admin:'مدير النظام'};
+function muCanManage(){return !!currentUser && currentUser.dbRole==='system_admin';}
+function muApplyRole(){
+ const tab=$('usersTab'), form=$('managedUserForm'); if(!tab||!form)return;
+ const allowed=muCanManage(); tab.style.display=allowed?'':'none';
+ form.querySelectorAll('input,select,button').forEach(el=>el.disabled=!allowed);if(allowed&&window.muUpdateScope)muUpdateScope();
+ if(!allowed && $('users').classList.contains('active')) document.querySelector('nav button[data-tab="daily"]')?.click();
+ $('mu-permission-note').textContent=allowed?'إنشاء الحسابات متاح لمدير النظام فقط. اكتب الأسماء أو اخترها من الاقتراحات؛ الأسماء الجديدة تُنشأ تلقائيًا.':'إدارة المستخدمين متاحة لمدير النظام فقط.';
+}
+$('managedUserForm').addEventListener('submit',async e=>{
+ e.preventDefault(); const status=$('mu-status'); status.textContent='';
+ if(!muCanManage()){status.textContent='غير مصرح: مدير النظام فقط يمكنه إنشاء الحسابات.';return;}
+ const email=$('mu-email').value.trim(), password=$('mu-password').value;
+ if(password.length<12){status.textContent='كلمة المرور يجب أن تكون 12 حرفًا على الأقل.';return;}
+ const role=$('mu-role').value;
+ const cl=id=>$(id).value.trim().replace(/\s+/g,' ');
+ const dn=cl('mu-district'),mn=cl('mu-municipality'),cn=cl('mu-center');
+ let district_id=null,municipality_id=null,center_id=null;
+ if(!dn){status.textContent='اكتب اسم المقاطعة لهذا الدور.';return;}
+ if(role!=='district_manager'&&!mn){status.textContent='اكتب اسم المقاطعة والبلدية لهذا الدور.';return;}
+ if((role==='center_manager'||role==='field_agent')&&!cn){status.textContent='اكتب اسم المقاطعة والبلدية والمركز لهذا الدور.';return;}
+ const {data:{session}}=await supabaseClient.auth.getSession();
+ if(!session){status.textContent='انتهت جلسة الدخول. سجّل الدخول مجددًا.';return;}
+ const btn=e.submitter; if(btn){btn.disabled=true;btn.textContent='جارٍ إنشاء الحساب…';}
+ try{
+  district_id=await muEnsure('districts',dn);if(mn)municipality_id=await muEnsure('municipalities',mn,'district_id',district_id);if(cn)center_id=await muEnsure('centers',cn,'municipality_id',municipality_id);
+  const {data,error}=await supabaseClient.functions.invoke('admin-create-user',{
+   body:{email,password,full_name:$('mu-name').value.trim(),role,district_id,municipality_id,center_id}
+  });
+  if(error){let detail='';try{detail=await error.context?.json?.().then(x=>x.error||x.message||'').catch(()=> '');}catch(_){} throw new Error(detail||error.message||'create failed');}
+  if(data?.error) throw new Error(data.error);
+  await muLoadUsers();muRefreshLists('d');status.textContent='تم إنشاء الحساب بنجاح.';
+  $('managedUserForm').reset();
+ }catch(err){status.textContent='تعذر إنشاء الحساب. تحقق من البيانات وأعد المحاولة.';}
+ finally{if(btn){btn.disabled=!muCanManage();btn.textContent='إنشاء حساب فعلي';}}
+});
+async function muLoadUsers(){
+ const status=$('mu-status'), rows=$('mu-user-rows'), empty=$('mu-user-empty');
+ if(!muCanManage()){status.textContent='عرض الحسابات متاح لمدير النظام فقط.';return;}
+ status.textContent='جارٍ تحميل قائمة المستخدمين…'; rows.innerHTML=''; empty.style.display='none';
+ try{
+  const {data,error}=await supabaseClient.from('profiles').select('id,full_name,role,district_id,municipality_id,center_id').order('full_name');
+  if(error) throw error;
+  const users=data||[];
+  const nm=async t=>{const {data}=await supabaseClient.from(t).select('id,name');return Object.fromEntries((data||[]).map(r=>[r.id,r.name]));};
+  const [DN,MN,CN]=await Promise.all([nm('districts'),nm('municipalities'),nm('centers')]);
+  if(!users.length){empty.style.display='block';empty.textContent='لا توجد حسابات مسجلة.';status.textContent='';return;}
+  for(const u of users){
+   const tr=document.createElement('tr');
+   const values=[u.full_name||'—',MU_LABELS[u.role]||u.role||'—',DN[u.district_id]||'—',MN[u.municipality_id]||'—',CN[u.center_id]||'—'];
+   for(const v of values){const td=document.createElement('td');td.textContent=v;tr.appendChild(td);}
+   const td=document.createElement('td');
+   if(u.id===currentUser.id || u.role==='system_admin') {td.textContent=u.id===currentUser.id?'الحساب الحالي محمي':'حساب مدير النظام محمي';}
+   else {const btn=document.createElement('button');btn.className='btn warn smallbtn';btn.type='button';btn.textContent='حذف الحساب';btn.addEventListener('click',()=>muDeleteUser(u));td.appendChild(btn);}
+   tr.appendChild(td); rows.appendChild(tr);
+  }
+  status.textContent='';
+ }catch(err){status.textContent='تعذر تحميل قائمة المستخدمين.';}
+}
+async function muDeleteUser(u){
+ if(!muCanManage()){alert('الحذف متاح لمدير النظام فقط.');return;}
+ if(!u||u.id===currentUser.id||u.role==='system_admin'){alert('لا يمكن حذف الحساب الحالي أو حساب مدير النظام.');return;}
+ const label=(u.full_name||'مستخدم')+' ('+(MU_LABELS[u.role]||u.role)+')';
+ if(!confirm(tr('هل تريد حذف هذا الحساب؟')+' '+label))return;
+ const status=$('mu-status');status.textContent='جارٍ طلب حذف الحساب…';
+ try{
+  const {data,error}=await supabaseClient.functions.invoke('admin-delete-user',{body:{user_id:u.id}});
+  if(error){let detail='';try{detail=await error.context?.json?.().then(x=>x.error||x.message||'').catch(()=> '');}catch(_){}throw new Error(detail||error.message||'delete failed');}
+  if(data?.error)throw new Error(data.error);
+  status.textContent='تم حذف الحساب.';
+  await muLoadUsers();
+ }catch(err){status.textContent='تعذر حذف الحساب.';}
+}
+$('mu-refresh-users')?.addEventListener('click',muLoadUsers);
+const MU_I18N={ar:{district:'اختر المقاطعة',municipality:'اختر البلدية',center:'اختر المركز',loading:'جارٍ تحميل الأسماء…',failed:'تعذر تحميل أسماء المقاطعات والبلديات والمراكز.',needDistrict:'اختر المقاطعة لهذا الدور.',needMunicipality:'اختر المقاطعة والبلدية لهذا الدور.',needCenter:'اختر المقاطعة والبلدية والمركز لهذا الدور.',note:'إنشاء الحسابات متاح لمدير النظام فقط. اختر الأسماء من القوائم.'},fr:{district:'Choisir le district',municipality:'Choisir la commune',center:'Choisir le centre',loading:'Chargement des noms…',failed:'Impossible de charger les districts, communes et centres. Vérifiez les droits de lecture Supabase.',needDistrict:'Choisissez le district pour ce rôle.',needMunicipality:'Choisissez le district et la commune pour ce rôle.',needCenter:'Choisissez le district, la commune et le centre pour ce rôle.',note:'La création des comptes est réservée à l’administrateur système. Choisissez les noms dans les listes.'},en:{district:'Select district',municipality:'Select municipality',center:'Select center',loading:'Loading names…',failed:'Could not load districts, municipalities and centers. Check Supabase read permissions.',needDistrict:'Select a district for this role.',needMunicipality:'Select a district and municipality for this role.',needCenter:'Select a district, municipality and center for this role.',note:'Only the system administrator can create accounts. Choose names from the lists.'}};
+function muLang(){return MU_I18N[localStorage.getItem('sewer_language')||'ar']||MU_I18N.ar;}
+async function muFind(table,name,col,pid){let q=supabaseClient.from(table).select('id,name').eq('name',name);if(col)q=q.eq(col,pid);const {data}=await q.limit(1);return data&&data[0]?data[0].id:null;}
+async function muEnsure(table,name,col,pid){const id=await muFind(table,name,col,pid);if(id)return id;const row={name};if(col)row[col]=pid;const {data,error}=await supabaseClient.from(table).insert(row).select('id').single();if(error||!data)throw error||new Error('insert failed');return data.id;}
+async function muList(table,col,pid){let q=supabaseClient.from(table).select('id,name').order('name');if(col)q=q.eq(col,pid);const {data}=await q;return data||[];}
+function muFill(id,rows){const dl=$(id);dl.innerHTML='';rows.forEach(r=>{const o=document.createElement('option');o.value=r.name;dl.appendChild(o);});}
+async function muRefreshLists(level){
+ const cl=id=>$(id).value.trim().replace(/\s+/g,' ');const d=cl('mu-district'),m=cl('mu-municipality');
+ try{
+  if(level==='d')muFill('dl-district',await muList('districts'));
+  const did=(level!=='d'&&d)?await muFind('districts',d):null;
+  if(level==='m'){muFill('dl-municipality',did?await muList('municipalities','district_id',did):[]);muFill('dl-center',[]);}
+  if(level==='c'){const mid=(did&&m)?await muFind('municipalities',m,'district_id',did):null;muFill('dl-center',mid?await muList('centers','municipality_id',mid):[]);}
+ }catch(e){}
+}
+function muUpdateScope(){
+ const role=$('mu-role').value,m=$('mu-municipality'),c=$('mu-center'),on=muCanManage();
+ const needM=role!=='district_manager',needC=['center_manager','field_agent'].includes(role);
+ m.required=needM;c.required=needC;m.disabled=!needM||!on;c.disabled=!needC||!on;
+ if(!needM)m.value='';if(!needC)c.value='';
+}
+window.muUpdateScope=muUpdateScope;
+let muReady=false;
+async function muLoadScopes(){
+ if(muReady||!muCanManage())return;muReady=true;
+ const both=()=>{muRefreshLists('m');muRefreshLists('c');};
+ $('mu-role').addEventListener('change',()=>{muUpdateScope();both();});
+ $('mu-district').addEventListener('change',both);
+ $('mu-municipality').addEventListener('change',()=>muRefreshLists('c'));
+ muUpdateScope();await muRefreshLists('d');
+}
+if(typeof currentUser!=='undefined'&&currentUser){muApplyRole();muLoadScopes();}
+
+
+</script>
+<script>
+(function(){
+const L=`منصة تسيير ومتابعة شبكات الصرف الصحي|Plateforme de gestion et suivi des réseaux d’assainissement|Sewer Network Management & Monitoring Platform
+تسيير شبكات الصرف الصحي|Gestion des réseaux d’assainissement|Sewer Network Management
+النشاط اليومي للمراكز والوحدات • النقاط السوداء • المشاريع|Activité quotidienne des centres et unités • Points noirs • Projets|Daily activity of centres and units • Black spots • Projects
+المستخدم الحالي:|Utilisateur actuel :|Current user:
+تسجيل الخروج|Déconnexion|Sign out
+تسجيل الدخول / Sign in|Connexion|Sign in
+سجّل الدخول بالبريد الإلكتروني وكلمة المرور اللذين زوّدك بهما مدير النظام.|Connectez-vous avec l’e-mail et le mot de passe fournis par l’administrateur.|Sign in with the email and password provided by the administrator.
+البريد الإلكتروني|E-mail|Email
+البريد الإلكتروني *|E-mail *|Email *
+كلمة المرور|Mot de passe|Password
+أدخل كلمة المرور|Saisissez le mot de passe|Enter your password
+دخول|Se connecter|Sign in
+جارٍ التحقق…|Vérification…|Checking…
+نسيت كلمة المرور؟|Mot de passe oublié ?|Forgot password?
+تعيين كلمة مرور جديدة|Nouveau mot de passe|Set a new password
+أدخل كلمة مرور جديدة لحسابك.|Saisissez un nouveau mot de passe pour votre compte.|Enter a new password for your account.
+كلمة المرور الجديدة (12 حرفًا على الأقل)|Nouveau mot de passe (12 caractères minimum)|New password (at least 12 characters)
+تأكيد كلمة المرور|Confirmer le mot de passe|Confirm password
+حفظ كلمة المرور|Enregistrer le mot de passe|Save password
+تعذر تسجيل الدخول. تحقق من البريد الإلكتروني وكلمة المرور، أو اطلب من مدير النظام التأكد من إنشاء الحساب.|Connexion impossible. Vérifiez l’e-mail et le mot de passe, ou demandez à l’administrateur de vérifier votre compte.|Sign-in failed. Check your email and password, or ask the administrator to verify your account.
+تعذر الاتصال بالخادم. تحقق من اتصال الإنترنت ثم أعد المحاولة.|Connexion au serveur impossible. Vérifiez Internet puis réessayez.|Could not reach the server. Check your internet connection and try again.
+اكتب بريدك الإلكتروني أولًا ثم اضغط «نسيت كلمة المرور؟».|Saisissez d’abord votre e-mail puis cliquez sur « Mot de passe oublié ? ».|Enter your email first, then click “Forgot password?”.
+إذا كان البريد مسجلًا، ستصلك رسالة استعادة. افتحها على هذا الموقع ثم عيّن كلمة مرور جديدة.|Si l’e-mail est enregistré, vous recevrez un message de récupération. Ouvrez-le sur ce site puis définissez un nouveau mot de passe.|If the email is registered, you will receive a recovery message. Open it on this site and set a new password.
+استخدم كلمة مرور من 12 حرفًا على الأقل.|Utilisez un mot de passe d’au moins 12 caractères.|Use a password of at least 12 characters.
+كلمتا المرور غير متطابقتين.|Les mots de passe ne correspondent pas.|Passwords do not match.
+تم تحديث كلمة المرور بنجاح. سجّل الخروج ثم ادخل بكلمة المرور الجديدة.|Mot de passe mis à jour. Reconnectez-vous avec le nouveau mot de passe.|Password updated. Sign in with the new password.
+تعذر العثور على ملف المستخدم. اطلب من مدير النظام التحقق من الحساب.|Profil utilisateur introuvable. Demandez à l’administrateur de vérifier le compte.|User profile not found. Ask the administrator to check the account.
+دور هذا الحساب غير مدعوم في واجهة التطبيق الحالية.|Le rôle de ce compte n’est pas pris en charge.|This account’s role is not supported.
+مدير النظام — جميع الصلاحيات|Administrateur système — tous les droits|System administrator — full access
+مسؤول مقاطعة|Responsable de district|District manager
+المركز / البلدية / عون ميداني|Centre / commune / agent de terrain|Centre / municipality / field agent
+مسؤول بلدية|Responsable de commune|Municipality manager
+مسؤول مركز|Responsable de centre|Centre manager
+عون ميداني|Agent de terrain|Field agent
+إجمالي التدخلات|Total des interventions|Total interventions
+التدخلات الاستعجالية|Interventions urgentes|Emergency interventions
+المتر الطولي المنجز (م)|Linéaire réalisé (m)|Linear metres done (m)
+النقاط السوداء المفتوحة|Points noirs ouverts|Open black spots
+إدارة المستخدمين|Gestion des utilisateurs|User management
+التاريخ *|Date *|Date *
+وقائي|Préventif|Preventive
+استعجالي|Urgent|Emergency
+حجم النفايات من Les regards (م³)|Volume de déchets des regards (m³)|Waste from manholes (m³)
+حجم النفايات من Les avaloirs (م³)|Volume de déchets des avaloirs (m³)|Waste from storm drains (m³)
+من تاريخ|Du|From
+إلى تاريخ|Au|To
+التصنيف|Catégorie|Category
+طريقة التسريح|Méthode de curage|Cleaning method
+الكل|Tous|All
+كل المقاطعات|Tous les districts|All districts
+كل البلديات|Toutes les communes|All municipalities
+البلدية|Commune|Municipality
+المركز/الوحدة|Centre/unité|Centre/unit
+الطريقة|Méthode|Method
+المدة|Durée|Duration
+نفايات Regards (م³)|Déchets regards (m³)|Manhole waste (m³)
+نفايات Avaloirs (م³)|Déchets avaloirs (m³)|Storm drain waste (m³)
+المتر الطولي|Linéaire|Linear metres
+عدد DVO|Nb DVO|DVO count
+طول DVO (م)|Long. DVO (m)|DVO length (m)
+نفايات DVO (م³)|Déchets DVO (m³)|DVO waste (m³)
+عدد OVD|Nb OVD|OVD count
+طول OVD (م)|Long. OVD (m)|OVD length (m)
+نفايات OVD (م³)|Déchets OVD (m³)|OVD waste (m³)
+نفايات أخرى (م³)|Autres déchets (m³)|Other waste (m³)
+الموقع/الوصف|Lieu/description|Location/description
+إجراء|Action|Action
+حذف|Supprimer|Delete
+اسم المركز أو الوحدة|Nom du centre ou de l’unité|Centre or unit name
+اسم المقاطعة|Nom du district|District name
+اسم البلدية|Nom de la commune|Municipality name
+تُحسب آلياً|Calculée automatiquement|Calculated automatically
+الشارع أو الحي أو معلم قريب|Rue, quartier ou repère proche|Street, neighbourhood or landmark
+طبيعة العمل، سبب التدخل، الملاحظات...|Nature des travaux, cause, remarques...|Type of work, cause, notes...
+مثال: 36.75, 3.05 أو رابط خرائط|Ex. : 36.75, 3.05 ou lien de carte|E.g. 36.75, 3.05 or a map link
+التاريخ، الإجراء، النتيجة، الإجراء القادم...|Date, action, résultat, prochaine action...|Date, action, result, next action...
+تاريخ التسجيل *|Date d’enregistrement *|Registration date *
+الموقع / الحي *|Lieu / quartier *|Location / neighbourhood *
+نوع المشكلة|Type de problème|Problem type
+درجة الأولوية|Niveau de priorité|Priority
+الحالة|Statut|Status
+المسؤول / الوحدة المكلفة|Responsable / unité en charge|Owner / assigned unit
+وصف المشكلة *|Description du problème *|Problem description *
+الإجراءات المتخذة والمتابعة|Actions menées et suivi|Actions taken and follow-up
+رابط الموقع أو GPS|Lien de localisation ou GPS|Location link or GPS
+تاريخ آخر تحديث|Dernière mise à jour|Last update
+انسداد متكرر|Obstruction récurrente|Recurring blockage
+فيضان|Débordement|Overflow
+انهيار أو كسر|Effondrement ou rupture|Collapse or break
+رائحة أو ترسبات|Odeurs ou dépôts|Odour or deposits
+نقص قدرة الشبكة|Capacité insuffisante|Insufficient capacity
+أخرى|Autre|Other
+عادية|Normale|Normal
+متوسطة|Moyenne|Medium
+عالية|Élevée|High
+حرجة|Critique|Critical
+مفتوحة|Ouvert|Open
+قيد المعالجة|En traitement|In progress
+تمت المعالجة|Traité|Resolved
+تحتاج مشروعاً|Nécessite un projet|Needs a project
+الموقع|Lieu|Location
+المشكلة|Problème|Problem
+الأولوية|Priorité|Priority
+المسؤول|Responsable|Owner
+الوصف والإجراءات|Description et actions|Description & actions
+اسم المشروع *|Nom du projet *|Project name *
+نوع المشروع|Type de projet|Project type
+المؤسسة المنجزة|Entreprise réalisatrice|Contractor
+تاريخ الانطلاق|Date de démarrage|Start date
+تاريخ نهاية العقد|Date de fin du contrat|Contract end date
+نسبة التقدم %|Avancement %|Progress %
+المبلغ (اختياري)|Montant (facultatif)|Amount (optional)
+حالة المشروع|Statut du projet|Project status
+الملاحظات والعراقيل والإجراءات|Remarques, obstacles et actions|Notes, obstacles and actions
+توسعة شبكة|Extension de réseau|Network extension
+تجديد شبكة|Renouvellement de réseau|Network renewal
+إعادة تأهيل|Réhabilitation|Rehabilitation
+إنجاز محطة رفع|Réalisation d’une station de relevage|Pumping station construction
+صيانة كبرى|Maintenance majeure|Major maintenance
+قيد الإنجاز|En cours|Ongoing
+لم ينطلق|Non démarré|Not started
+متوقف|Arrêté|Suspended
+مستلم مؤقتاً|Réception provisoire|Provisionally accepted
+مستلم نهائياً|Réception définitive|Finally accepted
+المشروع|Projet|Project
+النوع|Type|Type
+المؤسسة|Entreprise|Contractor
+الانطلاق|Démarrage|Start
+النهاية|Fin|End
+التقدم|Avancement|Progress
+المبلغ|Montant|Amount
+ملاحظات|Remarques|Notes
+التقرير اليومي|Rapport journalier|Daily report
+اختر يوماً لاستخراج ملخص النشاط.|Choisissez un jour pour obtenir le résumé d’activité.|Pick a day to get the activity summary.
+تاريخ التقرير|Date du rapport|Report date
+إنشاء التقرير اليومي|Générer le rapport journalier|Generate daily report
+تصدير التقرير اليومي CSV|Exporter le rapport journalier CSV|Export daily report CSV
+طباعة التقرير|Imprimer le rapport|Print report
+الأسبوع من السبت إلى الجمعة.|La semaine va du samedi au vendredi.|The week runs from Saturday to Friday.
+نوع الفترة|Type de période|Period type
+أسبوعي|Hebdomadaire|Weekly
+نصف شهري (1–15)|Quinzaine (1–15)|Half-month (1–15)
+نصف شهري (16–نهاية الشهر)|Quinzaine (16–fin du mois)|Half-month (16–end of month)
+شهري|Mensuel|Monthly
+كل الفترات|Toutes les périodes|All periods
+الشهر|Mois|Month
+تقرير يوم|Rapport du|Report for
+طريقة العمل|Méthode de travail|Work method
+عدد التدخلات|Nombre d’interventions|Interventions
+المتر الطولي (م)|Linéaire (m)|Linear metres (m)
+النفايات (م³)|Déchets (m³)|Waste (m³)
+النفايات المستخرجة (م³)|Déchets extraits (m³)|Waste extracted (m³)
+المتر الطولي / النفايات|Linéaire / déchets|Linear metres / waste
+عدد Les regards:|Nombre de regards :|Manholes:
+— عدد Les avaloirs:|— Nombre d’avaloirs :|— Storm drains:
+ملاحظة: الأسبوع من السبت إلى الجمعة.|Remarque : la semaine va du samedi au vendredi.|Note: the week runs from Saturday to Friday.
+النوع|Type|Type
+الموقع والأعمال|Lieu et travaux|Location & works
+يُنشئ مدير النظام الحسابات يدويًا ويسلّم لكل مستخدم بريده وكلمة مروره الأولية.|L’administrateur crée les comptes manuellement et remet à chaque utilisateur son e-mail et son mot de passe initial.|The administrator creates accounts manually and gives each user their email and initial password.
+الاسم الكامل *|Nom complet *|Full name *
+كلمة مرور أولية *|Mot de passe initial *|Initial password *
+الدور|Rôle|Role
+المقاطعة / District|District|District
+البلدية / Municipality|Commune|Municipality
+المركز / Center|Centre|Centre
+إنشاء حساب فعلي|Créer le compte|Create account
+قائمة المستخدمين|Liste des utilisateurs|User list
+تحديث القائمة|Actualiser|Refresh
+الحسابات المسجلة في النظام وصلاحياتها.|Comptes enregistrés et leurs rôles.|Registered accounts and their roles.
+الاسم الكامل|Nom complet|Full name
+معرّف المقاطعة|ID district|District ID
+معرّف البلدية|ID commune|Municipality ID
+معرّف المركز|ID centre|Centre ID
+الإجراء|Action|Action
+حذف الحساب|Supprimer le compte|Delete account
+لا توجد ملفات مستخدمين.|Aucun utilisateur.|No users.
+إنشاء الحسابات متاح لمدير النظام فقط. اكتب الأسماء أو اخترها من الاقتراحات؛ الأسماء الجديدة تُنشأ تلقائيًا.|Seul l’administrateur peut créer des comptes. Choisissez le périmètre dans les listes.|Only the administrator can create accounts. Choose the scope from the lists.
+إدارة المستخدمين متاحة لمدير النظام فقط.|La gestion des utilisateurs est réservée à l’administrateur.|User management is for the administrator only.
+تم حفظ التدخل بنجاح|Intervention enregistrée|Intervention saved
+تم حفظ النقطة السوداء|Point noir enregistré|Black spot saved
+تم حفظ المشروع|Projet enregistré|Project saved
+هل تريد حذف هذا السجل؟|Supprimer cet enregistrement ?|Delete this record?
+ليس لديك صلاحية حذف هذا السجل|Vous n’avez pas le droit de supprimer cet enregistrement|You are not allowed to delete this record
+ليس لديك صلاحية تسجيل التدخلات|Vous n’avez pas le droit d’enregistrer des interventions|You are not allowed to record interventions
+ليس لديك صلاحية إدارة النقاط السوداء|Vous n’avez pas le droit de gérer les points noirs|You are not allowed to manage black spots
+ليس لديك صلاحية إدارة المشاريع|Vous n’avez pas le droit de gérer les projets|You are not allowed to manage projects
+تعذر حفظ البيانات. تحقق من الاتصال والصلاحيات.|Échec de l’enregistrement. Vérifiez la connexion et les droits.|Could not save. Check your connection and permissions.
+تعذر الحذف. تحقق من الصلاحيات.|Échec de la suppression. Vérifiez les droits.|Could not delete. Check permissions.
+تعذر تحميل البيانات من الخادم.|Impossible de charger les données.|Could not load data from the server.
+اختر المقاطعة|Choisir le district|Select district
+اختر البلدية|Choisir la commune|Select municipality
+اختر المركز|Choisir le centre|Select centre
+جارٍ إرسال رسالة الاستعادة…|Envoi du message de récupération…|Sending recovery message…
+جارٍ إنشاء الحساب…|Création du compte…|Creating account…
+جارٍ الحفظ…|Enregistrement…|Saving…
+جارٍ تحميل قائمة المستخدمين…|Chargement des utilisateurs…|Loading users…
+جارٍ طلب حذف الحساب…|Suppression du compte…|Deleting account…
+تعذر إرسال رسالة الاستعادة. حاول لاحقًا أو راجع مدير النظام.|Envoi impossible. Réessayez plus tard ou contactez l’administrateur.|Could not send the message. Try again later or contact the administrator.
+تعذر تحديث كلمة المرور. اطلب رسالة استعادة جديدة، فقد انتهت صلاحية الرابط.|Mise à jour impossible. Demandez un nouveau message : le lien a expiré.|Could not update the password. Request a new recovery message; the link has expired.
+تعذر استعادة جلسة الدخول. سجّل الدخول من جديد.|Impossible de restaurer la session. Reconnectez-vous.|Could not restore your session. Please sign in again.
+انتهت جلسة الدخول. سجّل الدخول مجددًا.|Session expirée. Reconnectez-vous.|Session expired. Please sign in again.
+مسؤول المشاريع|Responsable des projets|Projects manager
+المديرية العامة|Direction générale|General directorate
+مستخدم|Utilisateur|User
+مدير النظام|Administrateur système|System administrator
+حساب مدير النظام محمي|Compte administrateur protégé|Administrator account is protected
+الحساب الحالي محمي|Compte actuel protégé|Current account is protected
+لا توجد حسابات مسجلة.|Aucun compte enregistré.|No accounts registered.
+عرض الحسابات متاح لمدير النظام فقط.|L’affichage des comptes est réservé à l’administrateur.|Only the administrator can view accounts.
+الحذف متاح لمدير النظام فقط.|La suppression est réservée à l’administrateur.|Only the administrator can delete.
+لا يمكن حذف الحساب الحالي أو حساب مدير النظام.|Impossible de supprimer le compte actuel ou celui de l’administrateur.|The current account and administrator accounts cannot be deleted.
+غير مصرح: مدير النظام فقط يمكنه إنشاء الحسابات.|Non autorisé : seul l’administrateur peut créer des comptes.|Not authorised: only the administrator can create accounts.
+كلمة المرور يجب أن تكون 12 حرفًا على الأقل.|Le mot de passe doit comporter au moins 12 caractères.|Password must be at least 12 characters.
+اختر المقاطعة لهذا الدور.|Choisissez le district pour ce rôle.|Select a district for this role.
+اختر المقاطعة والبلدية لهذا الدور.|Choisissez le district et la commune pour ce rôle.|Select a district and municipality for this role.
+اختر المقاطعة والبلدية والمركز لهذا الدور.|Choisissez le district, la commune et le centre pour ce rôle.|Select a district, municipality and centre for this role.
+تم إنشاء الحساب بنجاح.|Compte créé avec succès.|Account created successfully.
+تعذر إنشاء الحساب. تحقق من البيانات وأعد المحاولة.|Création impossible. Vérifiez les données et réessayez.|Could not create the account. Check the data and try again.
+تم حذف الحساب.|Compte supprimé.|Account deleted.
+تعذر حذف الحساب.|Suppression impossible.|Could not delete the account.
+تعذر تحميل قائمة المستخدمين.|Impossible de charger les utilisateurs.|Could not load users.
+هل تريد حذف هذا الحساب؟|Supprimer ce compte ?|Delete this account?
+لا توجد تدخلات مسجلة لهذا التاريخ ضمن الفلاتر المحددة.|Aucune intervention pour cette date avec ces filtres.|No interventions for this date with the selected filters.
+المركز|Centre|Centre
+Linéaire (م)|Linéaire (m)|Linear metres (m)
+الأعمال|Travaux|Works
+الوصف|Description|Description
+الإجراءات|Actions|Actions
+Regards|Regards|Manholes
+Avaloirs|Avaloirs|Storm drains
+Les regards|Regards|Manholes
+Les avaloirs|Avaloirs|Storm drains
+طول DVO|Long. DVO|DVO length
+نفايات DVO م³|Déchets DVO m³|DVO waste m³
+طول OVD|Long. OVD|OVD length
+نفايات OVD م³|Déchets OVD m³|OVD waste m³
+نفايات أخرى م³|Autres déchets m³|Other waste m³
+اكتب أو اختر اسم المقاطعة|Saisir ou choisir le district|Type or choose the district
+اكتب أو اختر اسم البلدية|Saisir ou choisir la commune|Type or choose the municipality
+اكتب أو اختر اسم المركز|Saisir ou choisir le centre|Type or choose the centre
+اكتب اسم المقاطعة لهذا الدور.|Saisissez le district pour ce rôle.|Enter the district for this role.
+اكتب اسم المقاطعة والبلدية لهذا الدور.|Saisissez le district et la commune pour ce rôle.|Enter the district and municipality for this role.
+اكتب اسم المقاطعة والبلدية والمركز لهذا الدور.|Saisissez le district, la commune et le centre pour ce rôle.|Enter the district, municipality and centre for this role.
+إنشاء الحسابات متاح لمدير النظام فقط. اكتب الأسماء أو اخترها من الاقتراحات؛ الأسماء الجديدة تُنشأ تلقائيًا.|Seul l’administrateur peut créer des comptes. Saisissez les noms ou choisissez-les ; les nouveaux noms sont créés automatiquement.|Only the administrator can create accounts. Type names or pick suggestions; new names are created automatically.`;
+const D=uiDict;
+L.split('\n').forEach(l=>{const p=l.split('|');if(p.length<3)return;D.ar[p[0]]=p[0];D.fr[p[0]]=p[1];D.en[p[0]]=p[2];});
+function tr(s){const lang=document.documentElement.lang;if(lang==='ar'||!D[lang])return s;const k=String(s).trim();return D[lang][k]!==undefined?D[lang][k]:s;}
+window.tr=tr;function trNode(n){const lang=document.documentElement.lang;if(lang==='ar'||!D[lang])return;if(n.parentElement&&n.parentElement.closest('script,style,textarea'))return;const k=n.nodeValue.trim();if(k&&D[lang][k]!==undefined&&D[lang][k]!==k)n.nodeValue=n.nodeValue.replace(k,D[lang][k]);}
+new MutationObserver(ms=>{ms.forEach(m=>{if(m.type==='characterData'){trNode(m.target);return;}m.addedNodes.forEach(a=>{if(a.nodeType===3)trNode(a);else if(a.nodeType===1){const w=document.createTreeWalker(a,NodeFilter.SHOW_TEXT);while(w.nextNode())trNode(w.currentNode);}});});}).observe(document.body,{childList:true,subtree:true,characterData:true});
+const _al=window.alert.bind(window),_cf=window.confirm.bind(window);
+window.alert=m=>_al(tr(m));window.confirm=m=>_cf(tr(m));
+window.addEventListener('DOMContentLoaded',()=>{document.title=tr('تسيير شبكات الصرف الصحي');});
+let idle;function resetIdle(){clearTimeout(idle);idle=setTimeout(async()=>{if(typeof currentUser!=='undefined'&&currentUser){await supabaseClient.auth.signOut();location.reload();}},30*60*1000);}
+['click','keydown','touchstart'].forEach(e=>document.addEventListener(e,resetIdle,{passive:true}));resetIdle();
+})();
+</script>
+</body></html>
